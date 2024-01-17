@@ -1,0 +1,200 @@
+---
+title: "STA 108: Regression Analysis | Project 1"
+author: "Professor Amy Kim"
+date:  "Mahek Bhora & Tyler Le" 
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+The data being used in this project is titled SENIC. N = 113, where each observation is for a different hospital, with which we are looking to analyze the effect of the three different predictor variables on the average length of stay in days for all of the patients in a hospital. The predictor variables are infection, the average estimated probability in percentage of acquiring an infection in the hospital; facility, the percentage of 35 total potential facilities and services that are provided by the hospital; and Xray, percentage of x-rays performed on patients without pneumonia. We did three separate simple linear regressions, one for each predictor variable and found the best predictor of Length to be Infection.
+
+# Best Model Analysis
+
+The model that we will pick is Model Infection because it has the highest R\^2 value and the highest ratio of the MSR/MSE. This indicates a higher amount of the variation in length explained by the infection variable being added to the regression model.
+
+# Running Model Diagnostics (Outliers, Constant Variance, Histogram of Errors, QQ Plot)
+
+**Understanding Outliers in the Data:** Now we want to gain an understanding of the outliers in the dataset that may/may not be impacting the fit of the regression line. The boxplot gives us the exact cutoff for outlier values, and the scatterplot tell us that there are 3 major outliers in the length of hospital stay. These specific values skew the regression line due to the least squares method overly emphasizing the errors of those outliers. The outliers are (5.9, 17.94), (6.5, 19.56), (6.6, 13.95) where X represents percent probability of acquiring an infection while in the hospital, and Y represents the average length of the hospital stay.
+
+**Histogram Analysis:** The histogram has a relatively normal shape with the expected outliers falling outside of the main bell curve shape.
+
+**QQ Plot Analysis:** A majority of the data falls in a linear relationship between X and Y. This tells us that there is a strong linear relationship between the percentile that each residual from the model falls in and the percentile that normally distributed residuals fall in. The strong linear relationship between those values indicates an approximately normal distribution of the residuals which is desired.
+
+# Shapiro-Wilks Test Analysis
+
+Running the Shapiro-Wilks test, we find that since our p-value is extremely small, 1.699e-08, we reject the null hypothesis which had stated that the population is normally distributed. This violates our assumption of normally distributed data. However, due to the Central Limit Theorem (CLT), we can still state that the distribution of the sample means follows a normal curve since the sample size is large.
+
+# Fligner-Killeen Test Analysis
+
+Conducting the Fligner-Killeen test, we find that since our p-value is larger than the significance level of 0.025 (alpha = 0.05/2), we fail to reject the null hypothesis. Therefore, we can say that the variances between the two groups are equal at a 95% confidence level.
+
+# Analysis (Confidence Interval, Test Statistics, ANOVA Table, etc.)
+
+Analyzing the confidence interval, increasing the infection rate by 1% can can impact the length of the hospital stay by anywhere between 5.3038 days to 7.3697 days. Since the confidence interval is quite large, this implies that there is uncertainty regarding the true value of the population parameter. This is in line with our value of R\^2 = 28.46%. This means that only 28.46% of the variance in the average length of a hospital stay is explained by the regression model including the infection rate. However, the MSE value is smaller than the MSR value, which implies that the infection rate model is explaining more of the variation in the data on average length of hospital stay. This disconnect between a low R\^2 value and a low MSE value implies that the data is highly correlated but that the regression model does not fit the data well. This can be explained by the effect of the outliers on the regression model's fit regarding the data. Additionally, the high t-statistic and f-statistic both lead to the conclusion that the regression coefficients are statistically significant. This essentially means that the relationship between infection rate and average length of hospital stay is not due to chance and that our regression model depicts a statistically significant linear relationship.
+
+# Prediction Analysis
+
+Predicting the average length of the hospital stay using the different independent variables returns different values due to the differing relationships. When we used the x-ray model, the length of the stay was the largest as compared to the length of the hospital stay predicted by the percent of facilities in the hospital. The average length of the hospital stay was 9.150344 days when we predicted it using the infection rate, which close to being in the middle of the values resulting from the other models.
+
+\newpage
+
+# R-Appendix
+
+```{r}
+senic <- read.csv("/Users/sheetalbhora/Desktop/STA 108/Project 1/SENIC.csv")
+```
+
+```{r}
+### Model Infection
+model.inf <- lm(length ~ infection, data = senic)
+summary(model.inf)
+anova(model.inf)
+plot(senic$infection, senic$length, xlab = paste(
+  strwrap("Average estimated probability of acquiring infection in hospital (in percent)")), 
+  ylab = paste(
+    strwrap("Average length of stay all patients in hospital (in days)", width = 40)))
+abline(coef(model.inf), col = 'red')
+```
+
+```{r}
+### Model Facility
+model.fac <- lm(length ~ facility, data = senic)
+summary(model.fac)
+anova(model.fac)
+plot(senic$facility, senic$length, xlab = paste(
+  strwrap("Percent of 35 potential facilities and services that are provided by the hospital")), 
+  ylab = paste(
+    strwrap("Average length of stay all patients in hospital (in days)", width = 40)))
+abline(coef(model.fac), col = 'red')
+```
+
+```{r}
+### Model Xray
+model.xray <- lm(length ~ Xray, data = senic)
+summary(model.xray)
+anova(model.xray)
+plot(senic$Xray, senic$length, xlab = paste(
+  strwrap("Ratio of number of X-rays performed to number of patients 
+          without signs or symptoms of pneumonia, times 100")), ylab = paste(
+    strwrap("Average length of stay all patients in hospital (in days)", width = 40)))
+abline(coef(model.xray), col = 'red')
+```
+
+```{r}
+### Identifying outliers
+
+# Finding outliers for infections
+boxplot(senic$infection, xlab = "Infection Probability Percentage", 
+        main = "Boxplot of Infection Probability", horizontal = TRUE)
+first.inf = summary(senic$infection)[2]
+third.inf = summary(senic$infection)[5]
+IQR.inf = IQR(senic$infection)
+upper.inf = third.inf + 1.5*IQR.inf
+lower.inf = first.inf - 1.5*IQR.inf
+
+# Plotting outliers for infections
+plot(senic$infection, senic$length, xlab="Infection Probability Percentage", 
+     ylab="Avg. Length of Hospital Stay", main = "Outliers in Infection Probability Percentage",  col=ifelse(senic$infection>upper.inf | senic$infection<lower.inf, "red", "black"))
+
+# Finding outliers for length
+boxplot(senic$length, xlab = "Avg. Length of Hospital Stay", 
+        main = "Boxplot of Avg. Length of Hospital Stay", horizontal = TRUE)
+first.len = summary(senic$length)[2]
+third.len = summary(senic$length)[5]
+IQR.len = IQR(senic$length)
+upper.len = third.len + 1.5*IQR.len
+lower.len = first.len - 1.5*IQR.len
+
+# Plotting outliers for length
+plot(senic$infection, senic$length, xlab="Infections", 
+     ylab="Avg. Length of Hospital Stay", main="Outliers in Avg. Length of Hospital Stay",  col=ifelse(senic$length>upper.len | senic$length<lower.len, "red", "black"))
+abline(h=0, col = "red")
+
+#ggplot for errors vs fitted values to check for constant variance
+library(ggplot2)
+plot(model.inf$fitted.values, model.inf$residuals, 
+     main = "Errors vs. Fitted Values", xlab = "Fitted Values", ylab = "Errors") 
+abline(h = 0,col = "red")
+
+```
+
+```{r}
+### Histogram of the Residuals
+
+hist(model.inf$residuals, main = "Residuals", xlab = "ei",
+     pch = 19,font = 2,font.lab = 2,cex = 1.25, xlim = c(-5, 10), ylim = c(0,70))
+
+```
+
+```{r}
+### Normality assessment using QQ Plot
+
+# Final model has been selected, renaming to model
+model = model.inf
+
+# Creating residuals and fitted value columns
+senic$ei = model$residuals
+senic$yhat = model$fitted.values
+
+# QQ Plot
+qqnorm(senic$ei)
+qqline(senic$ei)
+
+# Subsetting outliers in residuals
+senic[which(senic$ei>4),]
+```
+
+```{r}
+### Normality assessment using Shapiro-Wilks Test
+ei = model$residuals
+SWtest = shapiro.test(ei)
+SWtest
+```
+
+```{r}
+### Equality of Variance assessment using Fligner-Killeen test
+Group = rep("Lower", nrow(senic))
+Group[senic$length > median(senic$length)] = "Upper"
+Group = as.factor(Group)
+senic$Group = Group
+FKTest = fligner.test(senic$ei, senic$Group)
+FKTest
+```
+
+```{r}
+### Analysis
+
+# Confidence interval of intercept and slope
+confint.lm(model, level = 0.95)
+
+# Critical t at significance 0.05
+qt(1-0.025, (nrow(senic)-2))
+
+# Summary containing R^2
+summary(model)
+
+# ANOVA Table containing F-Value
+anova(model)
+
+# Critical F at significance 0.05
+qf(0.05, 2, (nrow(senic)-2))
+```
+
+```{r}
+### Prediction of the average length of patient stay in a hospital with infection = 3.7, facility = 20, Xray = 90
+
+# Prediction interval for infections
+predict(model, newdata = data.frame(infection = 3.7))
+
+# Prediction interval for facility
+predict(model.fac, newdata = data.frame(facility = 20))
+
+# Prediction interval for Xray
+predict(model.xray, newdata = data.frame(Xray = 90))
+
+```
